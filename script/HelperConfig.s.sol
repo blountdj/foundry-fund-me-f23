@@ -17,6 +17,9 @@ contract HelperConfig is Script {
 
     NetworkConfig public activeNetworkConfig;
 
+    uint8 public constant DECIMALS = 8;
+    int256 public constant INITIAL_PRICE = 2000e8;
+
 
     struct NetworkConfig {
         address priceFeed; // ETH/USD price feed address
@@ -26,7 +29,7 @@ contract HelperConfig is Script {
         if (block.chainid == 11155111) {
             activeNetworkConfig = getSepoliaEthConfig();
         } else {
-            activeNetworkConfig = getAnvilEthConfig();
+            activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
     }
 
@@ -38,14 +41,18 @@ contract HelperConfig is Script {
         return sepoliaConfig;
     }
 
-    function getAnvilEthConfig() public pure returns (NetworkConfig memory) {
+    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
+        if (activeNetworkConfig.priceFeed != address(0)) { // address(0) is the default value
+            return activeNetworkConfig;
+        }
+        
         // price feed address
         
         // 1. Deploy the mocks
         // 2. Return the mock address
 
-        vm.startBroadcast()
-        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(8, 2000e8);
+        vm.startBroadcast();
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(DECIMALS, INITIAL_PRICE);
         vm.stopBroadcast();
 
         NetworkConfig memory anvilConfig = NetworkConfig({priceFeed: address(mockPriceFeed)});
